@@ -14,6 +14,20 @@ from beep.conversion_schemas import MACCOR_CONFIG
 from beep.structure.base_eis import BEEPDatapathWithEIS, EIS
 from beep.structure.validate import PROJECT_SCHEMA
 
+REQUIRED_COLUMNS = [
+    "rec#",
+    "cyc#",
+    "step",
+    "test (sec)",
+    "step (sec)",
+    "amp-hr",
+    "watt-hr",
+    "amps",
+    "volts",
+    "state",
+    "es",
+    "dpt time",
+]
 
 class MaccorDatapath(BEEPDatapathWithEIS):
     """Datapath for ingesting and structuring Maccor battery cycler data.
@@ -89,8 +103,28 @@ class MaccorDatapath(BEEPDatapathWithEIS):
         # Parse data
         data = pd.read_csv(path, delimiter="\t", skiprows=header_index)
         data.rename(str.lower, axis="columns", inplace=True)
-        data = data.astype(MACCOR_CONFIG["data_types"])
-        data.rename(MACCOR_CONFIG["data_columns"], axis="columns", inplace=True)
+
+        expected = {c.lower() for c in MACCOR_CONFIG["data_columns"].keys()}
+        missing_cols = sorted(list(expected - set(data.columns)))
+        if missing_cols:
+            print(f"Missing columns: {missing_cols}")
+            for c in missing_cols:
+                data[c] = np.nan
+
+        missing_required = [c for c in REQUIRED_COLUMNS if c not in data.columns]
+        if missing_required:
+            raise KeyError(f"Missing required columns: {missing_required}")
+
+        for col, dtype in MACCOR_CONFIG["data_types"].items():
+            col_l = col.lower()
+            if col_l in data.columns:
+                data[col_l] = data[col_l].astype(dtype)
+
+        data.rename(
+            {k.lower(): v for k, v in MACCOR_CONFIG["data_columns"].items()},
+            axis="columns",
+            inplace=True,
+        )
 
         # Needed for validating correctly
         data["_state"] = data["_state"].astype(str)
