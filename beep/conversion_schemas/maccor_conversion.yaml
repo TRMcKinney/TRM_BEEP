@@ -11,19 +11,19 @@ metadata_fields:
   procedure: protocol
   comment/barcode: barcode
 data_columns:
-  rec#: data_point
-  cyc#: cycle_index
-  step: step_index
-  test (sec): test_time
-  step (sec): step_time
+  rec#: data_point # REQUIRED
+  cyc#: cycle_index # REQUIRED
+  step: step_index # REQUIRED
+  test (sec): test_time # REQUIRED
+  step (sec): step_time # REQUIRED
   # amp-hr and watt-hr are a bit ambiguous
-  amp-hr: _capacity
-  watt-hr: _energy
-  amps: current
-  volts: voltage
-  state: _state
-  es: _ending_status
-  dpt time: date_time
+  amp-hr: _capacity # REQUIRED
+  watt-hr: _energy # REQUIRED
+  amps: current # REQUIRED
+  volts: voltage # REQUIRED
+  state: _state # REQUIRED
+  es: _ending_status # REQUIRED
+  dpt time: date_time # REQUIRED
   acimp/ohms: ac_impedence
   dcir/ohms: internal_resistance
   wf chg cap: _wf_chg_cap #charge_capacity
