@@ -79,10 +79,15 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             (MaccorDatapath)
         """
         with open(path) as f:
-            metadata_line = f.readline().strip()
+            lines = f.readlines()
+
+        header_index = next(
+            i for i, line in enumerate(lines) if line.strip().lower().startswith("rec#")
+        )
+        metadata_lines = [l.strip() for l in lines[:header_index]]
 
         # Parse data
-        data = pd.read_csv(path, delimiter="\t", skiprows=1)
+        data = pd.read_csv(path, delimiter="\t", skiprows=header_index)
         data.rename(str.lower, axis="columns", inplace=True)
         data = data.astype(MACCOR_CONFIG["data_types"])
         data.rename(MACCOR_CONFIG["data_columns"], axis="columns", inplace=True)
@@ -101,8 +106,8 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             data, "energy", "discharge"
         )
 
-        # Parse metadata - kinda hackish way to do it, but it works
-        metadata = cls.parse_metadata(metadata_line)
+        # Parse metadata - handle multiple lines
+        metadata = cls.parse_metadata_lines(metadata_lines)
         metadata = pd.DataFrame(metadata)
         _, channel_number = os.path.splitext(path)
         metadata["channel_id"] = int(channel_number.replace(".", ""))
@@ -263,6 +268,41 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             k.replace(":", ""): [v.strip()]
             for k, v in zip(metadata_fields, metadata_values)
         }
+        return metadata
+
+    @staticmethod
+    def parse_metadata_lines(metadata_lines):
+        """Parse metadata from one or more lines.
+
+        Supports files where metadata spans multiple lines by splitting each
+        line on a tab or colon and returning a dictionary compatible with the
+        existing metadata mapping.
+
+        Args:
+            metadata_lines (list[str]): lines of metadata text from the raw file.
+
+        Returns:
+            dict: dictionary of metadata fields and values.
+        """
+        metadata = {}
+        for line in metadata_lines:
+            line = line.strip()
+            if not line:
+                continue
+            if "\t" in line:
+                key, value = line.split("\t", 1)
+            elif ":" in line:
+                key, value = line.split(":", 1)
+            else:
+                parts = line.split(None, 1)
+                if len(parts) == 2:
+                    key, value = parts
+                else:
+                    continue
+            key = key.strip()
+            if key.endswith(":"):
+                key = key[:-1]
+            metadata[key] = [value.strip()]
         return metadata
 
     @staticmethod

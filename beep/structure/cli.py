@@ -60,7 +60,9 @@ def auto_load(filename):
     """
     if re.match(ARBIN_CONFIG["file_pattern"], filename) or re.match(FastCharge_CONFIG["file_pattern"], filename):
         return ArbinDatapath.from_file(filename)
-    elif re.match(MACCOR_CONFIG["file_pattern"], filename) or re.match(xTesladiag_CONFIG["file_pattern"], filename):
+    elif "MACCOR" in filename.upper():
+        return MaccorDatapath.from_file(filename)
+    elif re.match(xTesladiag_CONFIG["file_pattern"], filename):
         return MaccorDatapath.from_file(filename)
     elif re.match(INDIGO_CONFIG["file_pattern"], filename):
         return IndigoDatapath.from_file(filename)
